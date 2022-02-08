@@ -1,0 +1,205 @@
+#include <RH_ASK.h>
+#include <SPI.h> //Serial peripheral interface library
+#include <Servo.h>
+/* the libraries were copied from the projects linked in resources*/
+
+#define MAX_SIGNAL 2000
+#define MIN_SIGNAL 1000 /* the motor takes value between 1000-2000 ,  negative values mean opposite direction , 1 and 3 are counterclockwise and 2 and 4 are clockwise by default */
+#define MOTOR_PIN1 9
+#define MOTOR_PIN2 8
+#define MOTOR_PIN3 7
+#define MOTOR_PIN4 6
+
+Servo motor1;
+Servo motor2;
+Servo motor3;
+Servo motor4; // defining each motor
+
+RH_ASK rf_driver;
+
+String accel;
+String gyro;
+String str_out;
+String accel1;
+String gyro1;
+String str_out1;
+
+int ax, ay;
+int ax1, ay1; // create the variables for storing int values of string(accel) and string(gyro). one set for the left hand and one for the right hand.
+
+void setup()
+{
+  rf_driver.init();
+  Serial.begin(9600); // opening the serial channel
+  motor1.attach(MOTOR_PIN1);
+  motor2.attach(MOTOR_PIN2);
+  motor3.attach(MOTOR_PIN3);
+  motor4.attach(MOTOR_PIN4); // intializing motors
+}
+
+void loop()
+{
+  uint8_t buf[7];               // mention the size of the data... depends on how much data is sent. In this case [7].
+  uint8_t buflen = sizeof(buf); // store the whole data ...depends on the user .. if you want you can store  specific part of data.
+  if (rf_driver.recv(buf, &buflen))
+  {
+    str_out = String((char *)buf); // Again recover and seperate the values which were combined in the transmitter program.
+
+    for (int i = 0; i < str_out.length(); i++)
+    {
+      if (str_out.substring(i, i + 1) == ",")
+      {
+        accel = str_out.substring(0, i); // create seperate substrings to store the values of accel and gyro
+        gyro = str_out.substring(i + 1);
+        break;
+      }
+    }
+  }
+
+  ax = accel.toInt(); // Convert the Received string values to Int values.
+  ay = gyro.toInt();
+
+  if ((ax > 520 && ax < 550 && ay > 130 && ay < 160)) // Create setpoints ....depends on MPU to MPU you have to set these manually ..dont copy the values may wont work in your case.
+  {
+    forward(); // Forward
+  }
+  else if (ax > 545 && ax < 570 && ay > 100 && ay < 120)
+  {
+    backward(); // Backward
+  }
+  else if (ay < 40 && ay > 7 && ax > 490 && ax < 520)
+  {
+    right(); // Right
+  }
+  else if (ay > 250 && ay < 265 && ax > 510 && ax < 540)
+  {
+    left(); // Left
+  }
+
+  else
+  {
+    stay(); // stay
+  }
+  uint8_t buf1[7];                // mention the size of the data... depends on how much data is sent. In this case [7].
+  uint8_t buf1len = sizeof(buf1); // store the whole data ...depends on the user .. if you want you can store  specific part of data.
+  if (rf_driver.recv(buf1, &buf1len))
+  {
+    str_out1 = String((char *)buf1); // Again recover and seperate the values which were combined in the transmitter program.
+
+    for (int i = 0; i < str_out.length(); i++)
+    {
+      if (str_out.substring(i, i + 1) == ",")
+      {
+        accel1 = str_out.substring(0, i); // create seperate substrings to store the values of accel and gyro
+        gyro1 = str_out.substring(i + 1);
+        break;
+      }
+    }
+  }
+
+  ax1 = accel1.toInt(); // Convert the Received string values to Int values.
+  ay1 = gyro1.toInt();
+
+  if ((ax1 > 520 && ax1 < 550 && ay1 > 130 && ay1 < 160)) // Create setpoints ....depends on MPU to MPU you have to set these manually ..dont copy the values may wont work in your case.
+  {
+    up(); // Up
+  }
+  else if (ax1 > 545 && ax1 < 570 && ay1 > 100 && ay1 < 120)
+  {
+    down(); // Down
+  }
+  else if (ay1 < 40 && ay1 > 7 && ax > 490 && ax1 < 520)
+  {
+    clockwise(); // rotate clockwise
+  }
+  else if (ay1 > 250 && ay1 < 265 && ax1 > 510 && ax1 < 540)
+  {
+    counterclockwise(); // rotate counterclockwise
+  }
+
+  else
+  {
+    stay(); // stay
+  }
+}
+
+void forward()
+{
+  motor1.writeMicroseconds(1100); // function which sets the RPM of the motor
+  motor2.writeMicroseconds(1100); // the values here are arbitrary setpoints as the real working values will only be possible in a IRL trial and error with the componenets
+  motor3.writeMicroseconds(1400);
+  motor4.writeMicroseconds(1400);
+  delay(500); // delay is given so that it follows that speed for some time(half a second)
+}
+
+void backward()
+{
+  motor1.writeMicroseconds(1400);
+  motor2.writeMicroseconds(1400);
+  motor3.writeMicroseconds(1100);
+  motor4.writeMicroseconds(1100);
+  delay(500);
+}
+
+void right()
+{
+  motor1.writeMicroseconds(1400);
+  motor2.writeMicroseconds(1100);
+  motor3.writeMicroseconds(1100);
+  motor4.writeMicroseconds(1400);
+  delay(500);
+}
+
+void left()
+{
+  motor1.writeMicroseconds(1100);
+  motor2.writeMicroseconds(1400);
+  motor3.writeMicroseconds(1400);
+  motor4.writeMicroseconds(1100);
+  delay(500);
+}
+
+void up()
+{
+  motor1.writeMicroseconds(1300);
+  motor2.writeMicroseconds(1300);
+  motor3.writeMicroseconds(1300);
+  motor4.writeMicroseconds(1300);
+  delay(500);
+}
+
+void down()
+{
+  motor1.writeMicroseconds(1100);
+  motor2.writeMicroseconds(1100);
+  motor3.writeMicroseconds(1100);
+  motor4.writeMicroseconds(1100);
+  delay(500);
+}
+
+void stay()
+{
+  motor1.writeMicroseconds(1200); // have assumed 1200 has the RPM to maintain a certain altitude
+  motor2.writeMicroseconds(1200);
+  motor3.writeMicroseconds(1200);
+  motor4.writeMicroseconds(1200);
+  delay(500);
+}
+
+void clockwise()
+{
+  motor1.writeMicroseconds(1200);
+  motor2.writeMicroseconds(-1200);
+  motor3.writeMicroseconds(1200);
+  motor4.writeMicroseconds(-1200);
+  delay(500);
+}
+
+void counterclockwise()
+{
+  motor1.writeMicroseconds(-1200);
+  motor2.writeMicroseconds(1200);
+  motor3.writeMicroseconds(-1200);
+  motor4.writeMicroseconds(1200);
+  delay(500);
+}
